@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gourmet Bites - Restaurant Menu</title>
+  <link rel="stylesheet" href="./style.css">
+  
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🍽️ Gourmet Bites</h1>
+      <p>Fresh | Delicious | Fast</p>
+    </header>
+
+    <section class="menu-section">
+      <h2>📋 Our Menu</h2>
+      <ul id="menu-list" class="menu-list"></ul>
+    </section>
+
+    <section class="order-section">
+      <h2>🛒 Place Your Order</h2>
+      <form id="order-form" onsubmit="placeOrder(); return false;">
+        <input type="text" id="customer-name" placeholder="Your Name" required />
+        <select id="item-id" required></select>
+        <input type="number" id="quantity" placeholder="Quantity" min="1" required />
+        <button type="submit">Order Now</button>
+      </form>
+      <p id="msg" class="message"></p>
+    </section>
+
+    <footer>
+      <p>&copy; 2025 Gourmet Bites. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
