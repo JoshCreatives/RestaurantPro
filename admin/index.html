@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel - Gourmet Bites</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #333;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px 0;
+      padding: 8px;
+      background: #f1f1f1;
+      border-radius: 5px;
+    }
+    button {
+      margin-left: 5px;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.delete {
+      background: red;
+    }
+    form input, form button {
+      padding: 8px;
+      margin: 5px 0;
+    }
+    input[type="number"] {
+      width: 50px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍽️ Admin Panel - Gourmet Bites</h1>
+
+    <section>
+      <h2>📋 Menu Items</h2>
+      <ul id="menu-list"></ul>
+      <form id="add-item-form">
+        <input type="text" id="new-name" placeholder="New Item Name" required />
+        <input type="number" id="new-price" placeholder="Price" step="0.01" required />
+        <button type="submit">Add Item</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>🛒 Orders</h2>
+      <ul id="orders-list"></ul>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    function loadMenu() {
+      axios.get('../api/get_menu.php')
+        .then(res => {
+          const list = document.getElementById('menu-list');
+          list.innerHTML = '';
+          res.data.forEach(item => {
+            const li = document.createElement('li');
+            li.id = `menu-item-${item.id}`;
+            li.innerHTML = `
+              <span class="display-mode">
+                ${item.name} - $${parseFloat(item.price).toFixed(2)}
+                <button onclick="enableEdit(${item.id}, '${item.name}', ${parseFloat(item.price)})">✏️ Edit</button>
+                <button class="delete" onclick="deleteMenuItem(${item.id})">🗑️ Delete</button>
+              </span>
+              <span class="edit-mode" style="display:none;">
+                <input type="text" id="edit-name-${item.id}" value="${item.name}" />
+                <input type="number" id="edit-price-${item.id}" step="0.01" value="${parseFloat(item.price).toFixed(2)}" style="width:70px;" />
+                <button onclick="saveEdit(${item.id})">💾 Save</button>
+                <button onclick="cancelEdit(${item.id})">❌ Cancel</button>
+              </span>
+            `;
+            list.appendChild(li);
+          });
+        })
+        .catch(err => {
+          console.error('Error loading menu:', err);
+          alert('Failed to load menu items.');
+        });
+    }
+
+    function enableEdit(id, name, price) {
+      const li = document.getElementById(`menu-item-${id}`);
+      li.querySelector('.display-mode').style.display = 'none';
+      li.querySelector('.edit-mode').style.display = 'inline';
+    }
+
+    function cancelEdit(id) {
+      const li = document.getElementById(`menu-item-${id}`);
+      li.querySelector('.edit-mode').style.display = 'none';
+      li.querySelector('.display-mode').style.display = 'inline';
+    }
+
+    function saveEdit(id) {
+      const newName = document.getElementById(`edit-name-${id}`).value.trim();
+      const newPrice = document.getElementById(`edit-price-${id}`).value.trim();
+
+      if (!newName || !newPrice || isNaN(newPrice) || parseFloat(newPrice) <= 0) {
+        alert('Please enter a valid name and price.');
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.append('id', id);
+      params.append('name', newName);
+      params.append('price', newPrice);
+
+      axios.post('../api/update_menu_item.php', params)
+        .then(() => {
+          loadMenu();
+        })
+        .catch(err => {
+          console.error('Error updating menu item:', err);
+          alert('Failed to update menu item.');
+        });
+    }
+
+    function loadOrders() {
+      axios.get('../api/get_orders.php')
+        .then(res => {
+          const list = document.getElementById('orders-list');
+          list.innerHTML = '';
+          res.data.forEach(order => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              ${order.customer_name} ordered 
+              <input type="number" id="qty-${order.id}" value="${order.quantity}" min="1" />
+              of ${order.item_name} at ${order.order_time}
+              <button onclick="updateOrder(${order.id})">✏️ Edit</button>
+              <button class="delete" onclick="deleteOrder(${order.id})">🗑️ Delete</button>
+            `;
+            list.appendChild(li);
+          });
+        })
+        .catch(err => {
+          console.error('Error loading orders:', err);
+          alert('Failed to load orders.');
+        });
+    }
+
+    function addMenuItem(name, price) {
+      const params = new URLSearchParams();
+      params.append('name', name);
+      params.append('price', price);
+
+      axios.post('../api/add_menu_item.php', params)
+        .then(() => {
+          loadMenu();
+          document.getElementById('add-item-form').reset();
+        })
+        .catch(err => {
+          console.error('Error adding item:', err);
+          alert('Failed to add menu item.');
+        });
+    }
+
+    function deleteMenuItem(id) {
+      const params = new URLSearchParams();
+      params.append('id', id);
+
+      axios.post('../api/delete_menu_item.php', params)
+        .then(() => {
+          loadMenu();
+        })
+        .catch(err => {
+          console.error('Error deleting item:', err);
+          alert('Failed to delete menu item.');
+        });
+    }
+
+    function deleteOrder(id) {
+      axios.post('../api/delete_order.php', { id })
+        .then(() => {
+          loadOrders();
+        })
+        .catch(() => {
+          alert('Failed to delete order.');
+        });
+    }
+
+    function updateOrder(id) {
+      const qtyInput = document.getElementById(`qty-${id}`);
+      const newQty = parseInt(qtyInput.value);
+
+      if (!newQty || newQty <= 0) {
+        alert('Invalid quantity');
+        return;
+      }
+
+      axios.post('../api/update_order.php', {
+        id: id,
+        quantity: newQty
+      }).then(() => {
+        loadOrders();
+      }).catch(() => {
+        alert('Failed to update order.');
+      });
+    }
+
+    document.getElementById('add-item-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      const price = document.getElementById('new-price').value.trim();
+      if (name && price) {
+        addMenuItem(name, price);
+      }
+    });
+
+    // Initial load
+    loadMenu();
+    loadOrders();
+  </script>
+</body>
+</html>
